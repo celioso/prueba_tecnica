@@ -1,0 +1,98 @@
+{
+    "name": "Ticket AI Processing Flow",
+    "nodes": [
+        {
+        "parameters": {
+            "httpMethod": "POST",
+            "path": "process-ticket-webhook",
+            "responseMode": "onReceived"
+        },
+        "name": "Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 1,
+        "position": [200, 300]
+        },
+        {
+        "parameters": {
+            "url": "https://TU-API.onrender.com/process-ticket",
+            "method": "POST",
+            "jsonParameters": true,
+            "options": {},
+            "bodyParametersJson": "{\n  \"ticket_id\": \"{{$json.ticket_id}}\",\n  \"description\": \"{{$json.description}}\"\n}"
+        },
+        "name": "Process Ticket (FastAPI)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 2,
+        "position": [450, 300]
+        },
+        {
+        "parameters": {
+            "conditions": {
+            "string": [
+                {
+                "value1": "={{$json.sentiment}}",
+                "operation": "equal",
+                "value2": "Negativo"
+                }
+            ]
+            }
+        },
+        "name": "IF Sentiment Negativo",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [700, 300]
+        },
+        {
+        "parameters": {
+            "values": {
+            "string": [
+                {
+                "name": "message",
+                "value": "⚠️ Ticket con sentimiento NEGATIVO detectado. Atención prioritaria requerida."
+                }
+            ]
+            }
+        },
+        "name": "Simulated Email",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 2,
+        "position": [950, 200]
+        }
+    ],
+    "connections": {
+        "Webhook": {
+        "main": [
+            [
+            {
+                "node": "Process Ticket (FastAPI)",
+                "type": "main",
+                "index": 0
+            }
+            ]
+        ]
+        },
+        "Process Ticket (FastAPI)": {
+        "main": [
+            [
+            {
+                "node": "IF Sentiment Negativo",
+                "type": "main",
+                "index": 0
+            }
+            ]
+        ]
+        },
+        "IF Sentiment Negativo": {
+        "main": [
+            [
+            {
+                "node": "Simulated Email",
+                "type": "main",
+                "index": 0
+            }
+            ],
+            []
+        ]
+        }
+    }
+}
