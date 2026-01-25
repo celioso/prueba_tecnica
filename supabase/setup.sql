@@ -1,4 +1,3 @@
--- Crear la tabla de tickets
 CREATE TYPE ticket_category AS ENUM ('Técnico', 'Facturación', 'Comercial');
 CREATE TYPE ticket_sentiment AS ENUM ('Positivo', 'Neutral', 'Negativo');
 
