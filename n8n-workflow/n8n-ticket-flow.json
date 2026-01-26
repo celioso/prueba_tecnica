@@ -1,0 +1,87 @@
+{
+    "name": "AI Ticket Automation",
+    "nodes": [
+        {
+        "id": "Webhook",
+        "name": "New Ticket Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 1,
+        "position": [200, 300],
+        "parameters": {
+            "httpMethod": "POST",
+            "path": "new-ticket",
+            "responseMode": "onReceived"
+        }
+        },
+        {
+        "id": "PythonAPI",
+        "name": "Process Ticket (Python)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 3,
+        "position": [420, 300],
+        "parameters": {
+            "url": "http://localhost:8000/process-ticket",
+            "method": "POST",
+            "jsonParameters": true,
+            "bodyParametersJson": "={{ $json }}"
+        }
+        },
+        {
+        "id": "IfNegative",
+        "name": "Sentiment is Negative?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [640, 300],
+        "parameters": {
+            "conditions": {
+            "string": [
+                {
+                "value1": "={{ $json.sentiment }}",
+                "operation": "equals",
+                "value2": "Negativo"
+                }
+            ]
+            }
+        }
+        },
+        {
+        "id": "SendEmail",
+        "name": "Send Email (Simulated)",
+        "type": "n8n-nodes-base.emailSend",
+        "typeVersion": 2,
+        "position": [860, 200],
+        "parameters": {
+            "fromEmail": "alerts@support.com",
+            "toEmail": "admin@support.com",
+            "subject": "⚠ Ticket con Sentimiento Negativo",
+            "text": "Ticket ID: {{ $json.ticket_id }}\nCategoría: {{ $json.category }}\nSentimiento: {{ $json.sentiment }}"
+        }
+        },
+        {
+        "id": "Log",
+        "name": "Audit Log",
+        "type": "n8n-nodes-base.logger",
+        "typeVersion": 1,
+        "position": [860, 400],
+        "parameters": {
+            "message": "Ticket {{ $json.ticket_id }} procesado con sentimiento negativo",
+            "level": "info"
+        }
+        }
+    ],
+    "connections": {
+        "New Ticket Webhook": {
+        "main": [[{ "node": "Process Ticket (Python)", "type": "main", "index": 0 }]]
+        },
+        "Process Ticket (Python)": {
+        "main": [[{ "node": "Sentiment is Negative?", "type": "main", "index": 0 }]]
+        },
+        "Sentiment is Negative?": {
+        "main": [
+            [{ "node": "Send Email (Simulated)", "type": "main", "index": 0 }],
+            [{ "node": "Audit Log", "type": "main", "index": 0 }]
+        ]
+        }
+    },
+    "active": true
+}
