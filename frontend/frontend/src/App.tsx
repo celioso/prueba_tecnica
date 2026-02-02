@@ -1,86 +1,72 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { supabase } from "./lib/supabase";
-import { Ticket } from "./types/ticket";
 
-export default function App() {
-  const [tickets, setTickets] = useState<Ticket[]>([]);
+export default function TicketSimulator() {
+  const [description, setDescription] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  // Load initial tickets
-  useEffect(() => {
-    supabase
-      .from("tickets")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        if (data) setTickets(data);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!description.trim()) return;
+
+    setLoading(true);
+    try {
+      // 1. Insertar ticket en Supabase
+      const { data, error } = await supabase
+        .from("tickets")
+        .insert([{ description, processed: false }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Reemplaza con tu URL real de Render
+      const API_URL = "https://prueba-tecnica-krdj.onrender.com/process-ticket";
+      
+      await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ticket_id: data.id,
+          description: data.description
+        }),
       });
 
-    // Realtime subscription
-    const channel = supabase
-      .channel("tickets-realtime")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "tickets" },
-        (payload) => {
-          setTickets((prev) => {
-            const updated = payload.new as Ticket;
-            const others = prev.filter((t) => t.id !== updated.id);
-            return [updated, ...others];
-          });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+      setDescription("");
+      alert("Ticket enviado y procesándose por la IA");
+    } catch (err) {
+      console.error(err);
+      alert("Error al simular el ticket");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <h1 className="text-2xl font-bold mb-6">
-        AI Support Co-Pilot
-      </h1>
-
-      <div className="grid gap-4">
-        {tickets.map((t) => (
-          <div
-            key={t.id}
-            className="bg-white p-4 rounded-lg shadow border"
-          >
-            <p className="text-sm text-gray-500">
-              {new Date(t.created_at).toLocaleString()}
-            </p>
-
-            <p className="mt-2">{t.description}</p>
-
-            <div className="mt-3 flex gap-3 text-sm">
-              <span className="px-2 py-1 rounded bg-blue-100">
-                {t.category ?? "Pendiente"}
-              </span>
-
-              <span
-                className={`px-2 py-1 rounded ${
-                  t.sentiment === "Negativo"
-                    ? "bg-red-200"
-                    : t.sentiment === "Positivo"
-                    ? "bg-green-200"
-                    : "bg-gray-200"
-                }`}
-              >
-                {t.sentiment ?? "—"}
-              </span>
-
-              {!t.processed && (
-                <span className="px-2 py-1 rounded bg-yellow-200">
-                  Procesando
-                </span>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+    <div className="max-w-4xl mx-auto mb-10 bg-white p-6 rounded-xl shadow-sm border border-blue-100">
+      <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+        <span className="flex h-3 w-3 rounded-full bg-blue-500"></span>
+        Simular Nuevo Ticket
+      </h2>
+      <form onSubmit={handleSubmit} className="flex gap-2">
+        <input
+          type="text"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Ej: No puedo acceder a mi factura del mes pasado..."
+          className="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+          disabled={loading}
+        />
+        <button
+          type="submit"
+          disabled={loading}
+          className={`px-6 py-3 rounded-lg font-bold text-white transition-all ${
+            loading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
+          }`}
+        >
+          {loading ? "Enviando..." : "Enviar a IA"}
+        </button>
+      </form>
     </div>
   );
 }
-
