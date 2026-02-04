@@ -33,7 +33,7 @@ export default function TicketSimulator() {
       });
 
       setDescription("");
-      alert("Ticket enviado y procesándose por la IA");
+      alert("Ticket enviado y procesandose por la IA");
     } catch (err) {
       console.error(err);
       alert("Error al simular el ticket");
