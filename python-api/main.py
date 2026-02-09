@@ -6,27 +6,26 @@ import os
 from supabase import create_client
 from transformers import pipeline
 
-# ===============================
+
 # CARGA DE VARIABLES DE ENTORNO
-# ===============================
+
 load_dotenv()
 
-# ===============================
+
 # FASTAPI
-# ===============================
+
 app = FastAPI(title="AI Support Co-Pilot")
 
-# ===============================
+
 # SUPABASE
-# ===============================
+
 supabase = create_client(
     os.getenv("SUPABASE_URL"),
     os.getenv("SUPABASE_KEY")
 )
 
-# ===============================
 # MODELO IA (CLASIFICACIÓN)
-# ===============================
+
 classifier = pipeline(
     "zero-shot-classification",
     model="facebook/bart-large-mnli"
@@ -35,16 +34,15 @@ classifier = pipeline(
 CATEGORIES = ["Tecnico", "Facturacion", "Comercial"]
 SENTIMENTS = ["Positivo", "Neutral", "Negativo"]
 
-# ===============================
 # SCHEMA
-# ===============================
+
 class TicketRequest(BaseModel):
     ticket_id: str
     description: str
 
-# ===============================
+
 # ENDPOINT PRINCIPAL
-# ===============================
+
 @app.post("/process-ticket")
 def process_ticket(payload: TicketRequest):
     try:
@@ -84,9 +82,9 @@ def process_ticket(payload: TicketRequest):
             detail=f"Error procesando ticket: {str(e)}"
         )
 
-# ===============================
+
 # HEALTH CHECK
-# ===============================
+
 @app.get("/")
 def health_check():
     return {
